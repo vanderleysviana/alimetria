@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <!-- Adicionar jsPDF via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>NutriPlan - Montador de Dietas</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --secondary: #10b981;
+      --secondary-dark: #059669;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --background: #f8fafc;
+      --surface: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body, #app {
+      height: 100%;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Header Styles */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo i {
+      font-size: 24px;
+      color: var(--primary);
+    }
+
+    .logo h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+
+    /* Button Styles */
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-success {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: var(--secondary-dark);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Card Styles */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .meal-card {
+      background: linear-gradient(135deg, var(--primary-light), #f0f7ff);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(37, 99, 235, 0.1);
+    }
+
+    .meal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .meal-header strong {
+      font-size: 18px;
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+
+    /* Food List */
+    .food-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .food-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: var(--radius-sm);
+      border-left: 4px solid var(--primary);
+    }
+
+    .food-info h4 {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .food-info .quantity {
+      font-size: 14px;
+      color: var(--text-light);
+    }
+
+    .food-nutrition {
+      font-size: 14px;
+      color: var(--text-light);
+      text-align: right;
+    }
+
+    .food-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* Summary Section */
+    .summary {
+      background: linear-gradient(135deg, var(--primary-light), #f0f7ff);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 32px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(37, 99, 235, 0.1);
+    }
+
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .summary-item {
+      text-align: center;
+      padding: 16px;
+      background: white;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+    }
+
+    .summary-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 8px 0;
+    }
+
+    .summary-label {
+      font-size: 14px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    /* Alerts */
+    .alerts {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .alert {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      background: white;
+      border-left: 4px solid var(--warning);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .alert i {
+      color: var(--warning);
+      font-size: 18px;
+    }
+
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-large {
+      max-width: 800px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+      color: var(--primary);
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    /* Login Styles */
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+
+    .login-logo {
+      margin-bottom: 32px;
+    }
+
+    .login-logo i {
+      font-size: 48px;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .login-logo h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .login-tabs {
+      display: flex;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .login-tab {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+
+    .login-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* Floating Action Button */
+    .fab {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 100;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--secondary);
+      color: white;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.2s ease;
+    }
+
+    .fab:hover {
+      transform: scale(1.1);
+    }
+
+    /* Utilities */
+    .hidden {
+      display: none !important;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .text-muted {
+      color: var(--text-light);
+    }
+
+    .mt-4 {
+      margin-top: 24px;
+    }
+
+    .mb-4 {
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px;
+      }
+
+      header {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .user-info {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .food-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .food-actions {
+        align-self: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <i class="fas fa-apple-alt"></i>
+        <h1>NutriPlan</h1>
+        <p class="text-muted">Sistema de Montagem de Dietas</p>
+      </div>
+
+      <div class="login-tabs">
+        <button class="login-tab active" data-tab="login">Entrar</button>
+        <button class="login-tab" data-tab="register">Cadastrar</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="login-form">
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com" required>
+        </div>
+        <div class="field">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" placeholder="Sua senha" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          <i class="fas fa-sign-in-alt"></i>
+          Entrar
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="login-form hidden">
+        <div class="field">
+          <label for="registerName">Nome Completo</label>
+          <input type="text" id="registerName" placeholder="Seu nome completo" required>
+        </div>
+        <div class="field">
+          <label for="registerEmail">Email</label>
+          <input type="email" id="registerEmail" placeholder="seu@email.com" required>
+        </div>
+        <div class="field">
+          <label for="registerPassword">Senha</label>
+          <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+        </div>
+        <div class="field">
+          <label for="registerConfirmPassword">Confirmar Senha</label>
+          <input type="password" id="registerConfirmPassword" placeholder="Digite novamente" required>
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%;">
+          <i class="fas fa-user-plus"></i>
+          Criar Conta
+        </button>
+      </form>
+
+      <div class="mt-4 text-center">
+        <p class="text-muted">Ao continuar, você concorda com nossos Termos de Serviço</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="container hidden">
+    <header>
+      <div class="logo">
+        <i class="fas fa-apple-alt"></i>
+        <h1>NutriPlan</h1>
+      </div>
+      <div class="user-info">
+        <div id="patientDisplay" class="card" style="padding: 12px 16px; min-width: 200px;">
+          <div style="font-size: 12px; color: var(--text-light);">Paciente</div>
+          <div style="font-weight: 600; color: var(--primary);">— nenhum paciente selecionado —</div>
+        </div>
+        <button id="managePatientsBtn" class="btn btn-success">
+          <i class="fas fa-users"></i>
+          Gerenciar Pacientes
+        </button>
+        <button id="exportPdfBtn" class="btn btn-primary">
+          <i class="fas fa-file-pdf"></i>
+          Exportar PDF
+        </button>
+        <div class="user-avatar" id="userAvatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <button id="logoutBtn" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt"></i>
+          Sair
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div class="grid" id="mealsContainer">
+        <!-- Meals will be injected here -->
+      </div>
+
+      <div class="summary" id="summaryPanel">
+        <div class="summary-header">
+          <div>
+            <h2 style="color: var(--primary); margin-bottom: 4px;">Resumo Nutricional</h2>
+            <p class="text-muted">Totais agregados de todas as refeições</p>
+          </div>
+          <div class="controls">
+            <button id="saveSessionMainBtn" class="btn btn-success hidden">
+              <i class="fas fa-save"></i>
+              Salvar Sessão
+            </button>
+            <button id="clearBtn" class="btn btn-danger">
+              <i class="fas fa-trash"></i>
+              Limpar Tudo
+            </button>
+          </div>
+        </div>
+        <div id="summaryDetails" class="summary-grid">
+          <!-- Summary will be injected here -->
+        </div>
+        <div id="alerts" class="alerts">
+          <!-- Alerts will be injected here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Root -->
+  <div id="modalRoot"></div>
+
+  <!-- Floating Action Button -->
+  <button id="saveDietFloating" class="fab hidden">
+    <i class="fas fa-save"></i>
+  </button>
+
+  <script type="module">
+    // Tornar jsPDF globalmente disponível
+    window.jsPDF = window.jspdf.jsPDF;
+    import './src/app.js';
+  </script>
+</body>
+</html>
